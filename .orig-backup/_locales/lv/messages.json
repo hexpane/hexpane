@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: Minimālistiska Pārlūka Jauna Cilne & Bezmaksas"
+  },
+  "desc": {
+    "message": "Pārdefinējiet sava pārlūka \"Jauno cilni\" kā jaudīgu, minimālistisku, augsti pielāgojamu personīgo sākumlapu"
+  },
+  "add_to_my_websites": {
+    "message": "Pievienot Manām Vietnēm"
+  },
+  "add_to_reading_list": {
+    "message": "Pievienot Lasīšanas Sarakstam"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

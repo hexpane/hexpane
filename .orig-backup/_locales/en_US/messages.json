@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: Minimalist Browser New Tab Page & Free"
+  },
+  "desc": {
+    "message": "Redefine your browser's \"New Tab\" as a powerful, minimalist, highly customizable personal homepage"
+  },
+  "add_to_my_websites": {
+    "message": "Add to My Websites"
+  },
+  "add_to_reading_list": {
+    "message": "Add to Reading List"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

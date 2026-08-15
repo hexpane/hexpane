@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: Минималистична Нова Страница за Браузър & Безплатно"
+  },
+  "desc": {
+    "message": "Предефинирайте \"Нов раздел\" на вашия браузър като мощна, минималистична, изключително персонализируема лична начална страница"
+  },
+  "add_to_my_websites": {
+    "message": "Добавяне към Моите Сайтове"
+  },
+  "add_to_reading_list": {
+    "message": "Добавяне към Списък за Четене"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "మీ బ్రౌజర్ యొక్క \"కొత్త ట్యాబ్\"ను శక్తివంతమైన, కనిష్ట, అత్యధికంగా అనుకూలీకరించగల వ్యక్తిగత హోమ్‌పేజ్‌గా పునర్నిర్వచించండి"
+  },
+  "add_to_my_websites": {
+    "message": "నా వెబ్‌సైట్‌లకు జోడించు"
+  },
+  "add_to_reading_list": {
+    "message": "చదివే జాబితాకు జోడించు"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

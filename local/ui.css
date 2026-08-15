@@ -1,0 +1,140 @@
+/*
+ * local/ui.css — yerel sürüm için arayüz düzenlemeleri.
+ *
+ *   1. Sağ üstteki kullanıcı rozeti (Local / kişisel bilgiler / çıkış) kaldırılır.
+ *      Hesap kavramı olmadığı için o menünün karşılığı yok.
+ *   2. Sol üstteki Hexpane + klavye ikilisi sol alta taşınır.
+ *   3. Hexpane butonunun logo + metni yerine dişli ikonu konur; böylece klavye
+ *      butonuyla birebir aynı görünür.
+ *
+ * Buton görünümü uygulamanın kendi chakra reçetesinden gelir ve rengi
+ * --app-title-color üzerinden temayı zaten takip eder; burada yeni bir görsel
+ * stil tanımlanmaz, yalnızca içerik ve konum değişir.
+ *
+ * Sınıf adları emotion tarafından üretilen hash'ler olduğu için seçiciler
+ * data-testid üzerinden :has() ile yazıldı — hash'ler bundle her derlendiğinde
+ * değişir, testid'ler değişmez.
+ */
+
+/* 1. Kullanıcı rozeti. Kardeşi olan "Done" butonu düzenleme modunda gerektiği
+      için sadece rozeti saran kutu gizleniyor, sağ bloğun tamamı değil. */
+div:has(> [data-testid="button-header-user"]) {
+  display: none !important;
+}
+
+/* 2. Sol üst ikili -> sol alt. Kapsayıcı header 200px yüksekliğinde absolute
+      bir kutu olduğu için viewport'un altına yapışmak fixed gerektiriyor.
+      İç sarmalayıcının kendi 12px padding'i kenar boşluğunu zaten veriyor. */
+div:has(> div > [data-testid="button-header-ihomepage"]) {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 20 !important;
+}
+
+/* 3. Buton zemini sürekli görünsün. Dinlenme durumu, uygulamanın hover'da
+      kullandığı değerin aynısı — yeni bir renk uydurulmuyor, chakra'nın kendi
+      token'ı alınıyor, dolayısıyla tema ile birlikte değişiyor. */
+div:has(> div > [data-testid="button-header-ihomepage"]) .chakra-button {
+  background: var(--chakra-colors-color-palette-subtle) !important;
+  --bg-currentcolor: var(--chakra-colors-color-palette-subtle);
+}
+
+/* Zemin artık hep açık olduğu için hover'ın ayırt edilebilmesi adına bir tık
+   daha belirgin. currentColor üzerinden karıldığı için temayı takip eder. */
+@media (hover: hover) {
+  div:has(> div > [data-testid="button-header-ihomepage"]) .chakra-button:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor 25%, transparent) !important;
+  }
+}
+
+/* 4. İki buton birbirine yapışıktı; sürekli zeminleri tek bir lekeye dönüşüyordu. */
+div:has(> [data-testid="button-header-ihomepage"]) {
+  gap: 8px;
+}
+
+/* 5. Klavye ikonunu dişliyle optik olarak eşitle. İkisi de 20px kutuda ve aynı
+      çizgi kalınlığındayken klavye daha iri okunuyor: geniş bir dikdörtgen,
+      dişli ise yuvarlak — aynı kutuda daha çok yer kaplıyor. Kutusu 18px'e
+      indiriliyor, çizgi kalınlığı da buna göre: 24 birimlik viewBox 18px'e
+      ölçeklenince 2.22 değeri, dişlinin 20px'te 2 ile verdiği 1.67px'lik
+      çizginin aynısını üretir. Yani çizgiler birebir eşit, yalnızca geniş
+      glifin ayak izi küçülür. */
+.shortcut-key-button .tabler-icon {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.22;
+}
+
+/* 5. Dişli ikonu. Maske olarak kullanıldığından SVG'nin kendi rengi önemsiz;
+      dolgu currentColor'dan gelir, yani tema rengiyle birlikte değişir.
+      Klavye butonunun ikonu 20px ve padding'i 0 14px -> 48px genişlik. */
+[data-testid="button-header-ihomepage"] {
+  --ihp-cog: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z'/%3E%3Cpath d='M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0'/%3E%3C/svg%3E");
+  font-size: 0 !important;
+  padding-inline: 14px !important;
+  /* "Hexpane" metni gizlense de anonim bir flex öğesi olarak kalıyor ve
+     chakra'nın gap'i araya 8px koyuyordu; klavye butonuyla aynı 48px için sıfırla. */
+  gap: 0 !important;
+}
+
+[data-testid="button-header-ihomepage"] .chakra-avatar__root {
+  display: none !important;
+}
+
+[data-testid="button-header-ihomepage"]::before {
+  content: "";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  background-color: currentColor;
+  -webkit-mask: var(--ihp-cog) center / 20px 20px no-repeat;
+  mask: var(--ihp-cog) center / 20px 20px no-repeat;
+}
+
+/* 6. Çekmece menüsü: kullanılmayan girdileri kaldır ve tek sütuna al.
+      Hesap yok, mobil eşlik uygulaması yok, tanıtım/hakkında sayfaları uzak
+      siteye gidiyor — bu kurulumda hiçbirinin karşılığı kalmadı.
+      Kalanlar: Wallpapers, My Wallpapers, Settings.
+
+      Gizleme sarmalayıcı div'e uygulanmalı: girdiler ızgaranın doğrudan
+      çocukları değil, her biri bir div içinde. Yalnızca içeriği gizlemek
+      hücreyi boş bırakıyor ve menüde delikler oluşuyor. */
+div:has(> [data-testid="nav-website-navigation"]),
+div:has(> [data-testid="nav-app"]),
+div:has(> [data-testid="nav-widget"]),
+div:has(> [data-testid="nav-my-websites"]),
+div:has(> [data-testid="nav-mobile-side"]),
+div:has(> [data-testid="nav-features"]),
+div:has(> [data-testid="nav-about"]) {
+  display: none !important;
+}
+
+/* Kalan üç girdi tek sütun. Izgara 3 sabit sütundu (196px x3). */
+div:has(> div > [data-testid="nav-setting"]) {
+  grid-template-columns: 1fr !important;
+}
+
+/* 7. Menü çekmecesini daralt. Tek sütuna inince 672px'lik panelde döşemeler
+      aşırı geniş kalıyordu. Seçici yalnızca menüyü içeren çekmeceyi hedefler —
+      Wallpapers ve Settings panelleri de aynı sınıfı kullanıyor, onlar
+      genişliğini korumalı. */
+.chakra-drawer__content:has([data-testid="nav-setting"]) {
+  width: 400px !important;
+  max-width: 400px !important;
+}
+
+/* 8. Ayarlar panelinden gereksiz bölümler.
+      Satırların data-testid'i yok ve sınıf adları paylaşımlı (Appearance,
+      Language, Region hepsi css-1y3f6ad), o yüzden konumla seçiliyor.
+      Sıra: 1 Appearance, 2 Yeni sekmede aç, 3 Kısayol tuşları, 4 Çoklu sekme,
+      5 Duvar kağıdı ayarı, 6 Otomatik anahtar kelime, 7 Arama, 8 Dil,
+      9 Bölge, 10 24 saat, 11 Tarih biçimi, 12 Haftanın ilk günü,
+      13 Çerezler, 14 Birimler.
+      Kaldırılan: 9'dan sonrası. Hepsi bu kurulumda anlamsız — bölge/birim
+      yalnızca hava durumu içindi, tarih-saat biçimi ve çerez yönetimi de
+      hesap/uzak servis kalmayınca karşılıksız kaldı. */
+.css-m6q98p > :nth-child(n+9) {
+  display: none !important;
+}

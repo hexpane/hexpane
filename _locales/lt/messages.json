@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "Iš naujo apibrėžkite savo naršyklės \"Naują skirtuką\" kaip galingą, minimalistinį, labai pritaikomą asmeninį pradinį puslapį"
+  },
+  "add_to_my_websites": {
+    "message": "Pridėti prie Mano Svetainių"
+  },
+  "add_to_reading_list": {
+    "message": "Pridėti prie Skaitymo Sąrašo"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

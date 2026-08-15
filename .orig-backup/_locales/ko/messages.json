@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: 미니멀리스트 브라우저 새 탭 페이지 & 무료"
+  },
+  "desc": {
+    "message": "브라우저의 \"새 탭\"을 강력하고 미니멀하며 고도로 맞춤화 가능한 개인 홈페이지로 재정의하세요"
+  },
+  "add_to_my_websites": {
+    "message": "내 웹 사이트에 추가"
+  },
+  "add_to_reading_list": {
+    "message": "읽기 목록에 추가"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

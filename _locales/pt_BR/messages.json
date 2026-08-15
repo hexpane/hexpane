@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "Redefina a \"Nova Aba\" do seu navegador como uma página inicial pessoal poderosa, minimalista e altamente personalizável"
+  },
+  "add_to_my_websites": {
+    "message": "Adicionar aos Meus Sites"
+  },
+  "add_to_reading_list": {
+    "message": "Adicionar à Lista de Leitura"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

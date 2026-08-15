@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "अपने ब्राउज़र के \"नया टैब\" को एक शक्तिशाली, न्यूनतम, अत्यधिक अनुकूलन योग्य व्यक्तिगत होमपेज के रूप में पुनर्परिभाषित करें"
+  },
+  "add_to_my_websites": {
+    "message": "मेरी वेबसाइटों में जोड़ें"
+  },
+  "add_to_reading_list": {
+    "message": "पढ़ने की सूची में जोड़ें"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

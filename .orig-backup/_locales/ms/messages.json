@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: Halaman Tab Baharu Pelayar Minimalis & Percuma"
+  },
+  "desc": {
+    "message": "Takrifkan semula \"Tab Baharu\" pelayar anda sebagai laman utama peribadi yang berkuasa, minimalis dan sangat boleh disesuaikan"
+  },
+  "add_to_my_websites": {
+    "message": "Tambah ke Laman Web Saya"
+  },
+  "add_to_reading_list": {
+    "message": "Tambah ke Senarai Bacaan"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

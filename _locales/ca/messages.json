@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "Redefineix la \"Nova Pestanya\" del teu navegador com una pàgina d'inici personal potent, minimalista i altament personalitzable"
+  },
+  "add_to_my_websites": {
+    "message": "Afegeix als Meus Llocs Web"
+  },
+  "add_to_reading_list": {
+    "message": "Afegeix a la Llista de Lectura"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

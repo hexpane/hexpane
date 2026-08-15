@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "আপনার ব্রাউজারের \"নতুন ট্যাব\"কে একটি শক্তিশালী, মিনিমালিস্ট, উচ্চমাত্রায় কাস্টমাইজযোগ্য ব্যক্তিগত হোমপেজ হিসেবে পুনরায় সংজ্ঞায়িত করুন"
+  },
+  "add_to_my_websites": {
+    "message": "আমার ওয়েবসাইটে যোগ করুন"
+  },
+  "add_to_reading_list": {
+    "message": "পড়ার তালিকায় যোগ করুন"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

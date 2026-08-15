@@ -1,0 +1,135 @@
+body {
+  padding: 0px;
+  margin: 0px;
+}
+
+#body {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  width: 380px;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+#head {
+  border-bottom: 1px solid #efefef;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: row;
+}
+
+#head span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#head span:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#webinfo {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+}
+
+#webinfo-left img {
+  min-width: 64px;
+  border-radius: 5px;
+}
+
+
+#webinfo-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
+#title {
+  font-size: 16px;
+  font-weight: bold;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  word-wrap: break-word;
+  margin-bottom: 5px;
+}
+
+#url {
+  color: #666;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  word-wrap: break-word;
+  margin-bottom: 5px;
+}
+
+#actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+  padding: 15px 0 0 0;
+  border-top: 1px solid #efefef;
+}
+
+.button {
+  flex: 1;
+  border-radius: 20px;
+  background-color: none;
+  padding: 0 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 32px;
+  cursor: pointer;
+  background-color: #ebedf3;
+}
+
+.button:hover {
+  color: #fff;
+  background-color: #1c1c1c;
+}
+
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #333;
+  }
+
+  #body {
+    color: #fff;
+  }
+
+  #head {
+    border-bottom: 1px solid #4a4b4e;
+  }
+
+  #url {
+    color: #999;
+  }
+
+  #actions {
+    border-top: 1px solid #4a4b4e;
+  }
+
+  .button {
+    background-color: #515762;
+  }
+
+  .button:hover {
+    background-color: #4b505b;
+  }
+}

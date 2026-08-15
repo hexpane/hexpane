@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "将你的浏览器“新标签页”重新定义为一个强大、极简、高度自定义的个人主页"
+  },
+  "add_to_my_websites": {
+    "message": "添加到我的网站"
+  },
+  "add_to_reading_list": {
+    "message": "添加到阅读列表"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.cn/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.cn/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.cn/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: ಮಿನಿಮಲಿಸ್ಟ್ ಬ್ರೌಸರ್ ಹೊಸ ಟ್ಯಾಬ್ ಪೇಜ್ & ಉಚಿತ"
+  },
+  "desc": {
+    "message": "ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನ \"ಹೊಸ ಟ್ಯಾಬ್\" ಅನ್ನು ಶಕ್ತಿಶಾಲಿ, ಕನಿಷ್ಠ, ಹೆಚ್ಚು ಕಸ್ಟಮೈಸ್ ಮಾಡಬಹುದಾದ ವೈಯಕ್ತಿಕ ಹೋಮ್‌ಪೇಜ್ ಆಗಿ ಮರುವ್ಯಾಖ್ಯಾನಿಸಿ"
+  },
+  "add_to_my_websites": {
+    "message": "ನನ್ನ ವೆಬ್‌ಸೈಟ್‌ಗಳಿಗೆ ಸೇರಿಸಿ"
+  },
+  "add_to_reading_list": {
+    "message": "ಓದುವ ಪಟ್ಟಿಗೆ ಸೇರಿಸಿ"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

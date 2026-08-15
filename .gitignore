@@ -1,0 +1,6 @@
+.DS_Store
+
+# Kisisel duzen ve ondan turetilen ikonlar depoya girmez.
+# Klonlanmis kurulumda local/seed.example.json + local/img-default/ devreye girer.
+local/seed.json
+local/img/

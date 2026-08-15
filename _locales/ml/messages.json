@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "Hexpane"
+  },
+  "desc": {
+    "message": "നിങ്ങളുടെ ബ്രൗസറിന്റെ \"പുതിയ ടാബ്\" ശക്തവും മിനിമലിസ്റ്റും ഉയർന്ന ഇഷ്ടാനുസൃതമാക്കാവുന്നതുമായ വ്യക്തിഗത ഹോംപേജായി പുനർനിർവ്വചിക്കുക"
+  },
+  "add_to_my_websites": {
+    "message": "എന്റെ വെബ്‌സൈറ്റുകളിലേക്ക് ചേർക്കുക"
+  },
+  "add_to_reading_list": {
+    "message": "വായന പട്ടികയിലേക്ക് ചേർക്കുക"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

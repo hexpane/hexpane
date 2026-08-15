@@ -1,0 +1,53 @@
+{
+  "name": "__MSG_name__",
+  "description": "__MSG_desc__",
+  "default_locale": "en",
+  "version": "3.4.6",
+  "manifest_version": 3,
+  "icons": {
+    "64": "icon/icon_64.png",
+    "128": "icon/icon_128.png",
+    "192": "icon/icon_192.png",
+    "512": "icon/icon_512.png"
+  },
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "host_permissions": [
+    "https://www.google.com/",
+    "https://www.baidu.com/"
+  ],
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "search",
+    "storage"
+  ],
+  "optional_permissions": [
+    "bookmarks",
+    "favicon"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon/icon_64.png"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icon/icon_64.png",
+        "icon/icon_128.png",
+        "icon/icon_192.png",
+        "icon/icon_512.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "update_url": "https://clients2.google.com/service/update2/crx",
+  "background": {
+    "service_worker": "serviceworker.js"
+  }
+}

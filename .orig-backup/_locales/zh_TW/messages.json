@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: 極簡瀏覽器新分頁 & 免費"
+  },
+  "desc": {
+    "message": "將你的瀏覽器「新分頁」重新定義為一個強大、極簡、高度自訂的個人主頁"
+  },
+  "add_to_my_websites": {
+    "message": "添加到我的網站"
+  },
+  "add_to_reading_list": {
+    "message": "添加到閱讀列表"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}

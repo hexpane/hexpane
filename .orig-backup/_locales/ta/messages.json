@@ -1,0 +1,32 @@
+{
+  "name": {
+    "message": "iHomepage: மினிமலிஸ்ட் உலாவி புதிய டேப் பக்கம் & இலவசம்"
+  },
+  "desc": {
+    "message": "உங்கள் உலாவியின் \"புதிய தாவல்\"ஐ சக்திவாய்ந்த, குறைந்தபட்ச, மிகவும் தனிப்பயனாக்கக்கூடிய தனிப்பட்ட முகப்புப்பக்கமாக மறுவரையறை செய்யுங்கள்"
+  },
+  "add_to_my_websites": {
+    "message": "எனது இணையதளங்களில் சேர்"
+  },
+  "add_to_reading_list": {
+    "message": "வாசிப்பு பட்டியலில் சேர்"
+  },
+  "ihomepage_official_url": {
+    "message": "https://ihomepage.me/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "uninstall_ihomepage_url": {
+    "message": "https://ihomepage.me/uninstall?utm_source=chrome-extension&version=3.4.6"
+  },
+  "enable_ihomepage_url": {
+    "message": "https://ihomepage.me/enable-ihomepage/chrome/?utm_source=chrome-extension&version=3.4.6"
+  },
+  "extension_start_page_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_my_websie_url": {
+    "message": "chrome://newtab/"
+  },
+  "extension_add_to_reading_list_url": {
+    "message": "chrome://newtab/"
+  }
+}
