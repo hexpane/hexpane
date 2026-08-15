@@ -138,3 +138,9 @@ div:has(> div > [data-testid="nav-setting"]) {
 .css-m6q98p > :nth-child(n+9) {
   display: none !important;
 }
+
+/* backup.js'in eklediği "Yedekleme" satırı listenin sonuna geliyor, yani
+   yukarıdaki kuralın kapsamına giriyordu. Onu geri getir. */
+.css-m6q98p > .ihp-backup-row {
+  display: flex !important;
+}

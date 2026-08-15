@@ -43,10 +43,27 @@ a call from a code path that was missed still goes nowhere.
 | `local/seed.example.json` | Default layout used when no personal seed is present |
 | `local/img-default/` | Icons and wallpaper for the default layout |
 | `local/ui.css` | Interface adjustments (bottom-left dock, trimmed menus) |
+| `local/backup.js` | Export/import row injected into the settings panel |
 | `.orig-backup/` | Untouched originals of every modified file |
 
 Your own layout lives in `local/seed.json` and `local/img/`, both gitignored.
 When they are absent the shim falls back to the example seed.
+
+## Backup
+
+Settings has a **Yedekleme** row with export and import buttons. Export downloads
+the whole store as a single JSON file; import restores one and reloads.
+
+The file format is shared with any external mirror:
+
+```json
+{ "app": "hexpane-extension", "format": 1, "exportedAt": "...",
+  "storage": { "ihp:local:v1": { ... } } }
+```
+
+`window.__ihpLocal.restore()` accepts either that wrapper or a bare store
+object, so a file produced elsewhere can be imported here and vice versa.
+Anything else is rejected without touching the existing data.
 
 ## Development
 
