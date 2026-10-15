@@ -24,7 +24,7 @@
   // Bumped whenever local/seed.json changes in a way that must replace an
   // existing store. A store stamped with an older number is rebuilt from the
   // seed on the next load, so a new layout does not need a manual reset.
-  var SEED_VERSION = 9;
+  var SEED_VERSION = 10;
   var TOKEN_KEY = 'lscache-ACCESS_TOKEN'; // the app's own storage helper prefixes with lscache-
   var IMG_PREFIX = 'ihplocal:';           // stands in for an image kept in IndexedDB
   var REAL_FETCH = window.fetch.bind(window);
@@ -55,6 +55,11 @@
   try {
     if (!localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, JSON.stringify('ihp-local'));
   } catch (e) { /* private mode */ }
+
+  // The "what's new" card opens while the stored CURRENT_VERSION is below
+  // 3.4.1, and closing it stores the manifest version (1.x) — so it came back
+  // on every tab. A version past that threshold keeps it shut for good.
+  try { localStorage.setItem('lscache-CURRENT_VERSION', JSON.stringify('99.0.0')); } catch (e) { /* private mode */ }
 
   // The app clears the token whenever it thinks the session died. Under debug,
   // record who did it — otherwise the blank-page symptom has no visible cause.
