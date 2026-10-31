@@ -4,3 +4,6 @@
 # Klonlanmis kurulumda local/seed.example.json + local/img-default/ devreye girer.
 local/seed.json
 local/img/
+
+# Tarayıcıya yüklenen paket
+dist/

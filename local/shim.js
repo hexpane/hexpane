@@ -77,6 +77,10 @@
       }
     }
   } catch (e) { /* private mode */ }
+  // The "what's new" card opens while the stored CURRENT_VERSION is below
+  // 3.4.1, and closing it stores the manifest version (1.x) — so it came back
+  // on every tab. A version past that threshold keeps it shut for good.
+  try { localStorage.setItem('lscache-CURRENT_VERSION', JSON.stringify('99.0.0')); } catch (e) { /* private mode */ }
 
   // The app clears the token whenever it thinks the session died. Under debug,
   // record who did it — otherwise the blank-page symptom has no visible cause.
