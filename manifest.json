@@ -15,18 +15,21 @@
   },
   "host_permissions": [
     "https://www.google.com/",
-    "https://www.baidu.com/"
+    "https://www.baidu.com/",
+    "https://*.gstatic.com/*",
+    "https://icons.duckduckgo.com/*",
+    "<all_urls>"
   ],
   "permissions": [
     "activeTab",
     "contextMenus",
+    "favicon",
     "search",
     "storage",
     "unlimitedStorage"
   ],
   "optional_permissions": [
-    "bookmarks",
-    "favicon"
+    "bookmarks"
   ],
   "action": {
     "default_popup": "popup.html",

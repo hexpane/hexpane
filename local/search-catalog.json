@@ -1,0 +1,308 @@
+{
+"allSearch": [
+{
+"__typename": "Search",
+"_id": "64c4a8ae8bb3f708d5575f9e",
+"name": "Google",
+"icon": "/local/img-default/f2948e32-f090-45c8-a5a5-90e6be64f934.png",
+"urls": {
+"web": "https://www.google.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c4a8f88bb3f708d5576005",
+"name": "duckduckgo",
+"icon": "/local/img-default/94ba5059-1178-4b5c-9944-a3d8594a44d9.png",
+"urls": {
+"web": "https://duckduckgo.com/?iax=web&q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c4a9298bb3f708d557607f",
+"name": "Bing",
+"icon": "/local/img-default/cced56eb-ea19-456f-8250-c1daf329c458.png",
+"urls": {
+"web": "https://bing.com/search?form=QBRE&q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c52be38bb3f708d558af1f",
+"name": "Github",
+"icon": "/local/img-default/f5221988-54c5-48b8-8a57-c2cb63a24e4d.png",
+"urls": {
+"web": "https://github.com/search?type=repositories&q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c530488bb3f708d558b848",
+"name": "Google Scholar",
+"icon": "/local/img-default/2d3a3df4-a6a0-4f5f-95a2-02c3932d7dda.png",
+"urls": {
+"web": "https://scholar.google.com/scholar?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c5321f8bb3f708d558bc12",
+"name": "StackOverflow",
+"icon": "/local/img-default/e62a2a29-47d3-4ec7-8e71-45749952945d.png",
+"urls": {
+"web": "https://stackoverflow.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6507ffa49d758e55dbfed4c0",
+"name": "npm",
+"icon": "/local/img-default/0751e0f0-df74-468a-8d77-ea2f997567a9.png",
+"urls": {
+"web": "https://www.npmjs.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6735a7840354141304230b71",
+"name": "Youtube",
+"icon": "/local/img-default/b24a083e-126f-46f1-a31e-5812841d88c2.png",
+"urls": {
+"web": "https://www.youtube.com/results?search_query="
+}
+},
+{
+"__typename": "Search",
+"_id": "6735a8100354141304230e4a",
+"name": "ChatGPT",
+"icon": "/local/img-default/d39dd791-6656-4c11-9c00-208b5499e248.png",
+"urls": {
+"web": "https://chatgpt.com/?prompt="
+}
+},
+{
+"__typename": "Search",
+"_id": "67efe2e3ba7111b2716681b9",
+"name": "Yahoo",
+"icon": "/local/img-default/79f01525-6e37-4d0c-a3e9-e7a282ab2c71.jpg",
+"urls": {
+"web": "https://search.yahoo.com/search?p="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a1c678db208971e2c8809",
+"name": "X",
+"icon": "/local/img-default/f11da715-32e5-4f8c-8c18-e38fd8735b0d.png",
+"urls": {
+"web": "https://x.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a1ce48db208971e2c8f86",
+"name": "Google Scholar",
+"icon": "/local/img-default/00ee25ef-cb96-4ce2-8c55-a30910e3be35.png",
+"urls": {
+"web": "https://scholar.google.com/scholar?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a1da18db208971e2c90ea",
+"name": "Amazon",
+"icon": "/local/img-default/c5b71359-4658-4109-a8de-a66e58483283.png",
+"urls": {
+"web": "https://www.amazon.com/s?k="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a5fc08db208971e2d0d78",
+"name": "Reddit",
+"icon": "/local/img-default/92accb37-7b24-4fae-a84f-37998bda7f4c.png",
+"urls": {
+"web": "https://reddit.com/search/?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a56663207606c846e61ca16",
+"name": "Google Map",
+"icon": "/local/img-default/b95e7847-024b-40ab-bf37-c935d61616fd.png",
+"urls": {
+"web": "https://www.google.com/maps/search/?api=1&query="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a58d906aea860ed6f0547e4",
+"name": "Unsplash",
+"icon": "/local/img-default/4f9fd076-c64b-441d-9c3d-752f9cf0a7a5.png",
+"urls": {
+"web": "https://unsplash.com/s/photos/"
+}
+},
+{
+"__typename": "Search",
+"_id": "6a68259aaea860ed6f3b2189",
+"name": "GoDaddy",
+"icon": "/local/img-default/044d5636-02b7-492c-8762-74e902e4ffe5.png",
+"urls": {
+"web": "https://www.godaddy.com/domainsearch/find?domainToCheck="
+}
+},
+{
+"__typename": "Search",
+"_id": "6ab28f46b4b9b7ead9f4f951",
+"name": "eBay",
+"icon": "/local/img-default/3e8f31ac-5cd4-4102-953c-8b3cfaf977f1.png",
+"urls": {
+"web": "https://www.ebay.com/sch/i.html?_nkw=&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5338941272&customid=search&toolid=10001&mkevt=1"
+}
+}
+],
+"defaultMainSearch": {
+"__typename": "Search",
+"_id": "64c4a8ae8bb3f708d5575f9e",
+"name": "Google",
+"icon": "/local/img-default/f2948e32-f090-45c8-a5a5-90e6be64f934.png",
+"urls": {
+"web": "https://www.google.com/search?q="
+}
+},
+"defaultSearch": [
+{
+"__typename": "Search",
+"_id": "64c4a8ae8bb3f708d5575f9e",
+"name": "Google",
+"icon": "/local/img-default/f2948e32-f090-45c8-a5a5-90e6be64f934.png",
+"urls": {
+"web": "https://www.google.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6735a8100354141304230e4a",
+"name": "ChatGPT",
+"icon": "/local/img-default/d39dd791-6656-4c11-9c00-208b5499e248.png",
+"urls": {
+"web": "https://chatgpt.com/?prompt="
+}
+},
+{
+"__typename": "Search",
+"_id": "6735a7840354141304230b71",
+"name": "Youtube",
+"icon": "/local/img-default/b24a083e-126f-46f1-a31e-5812841d88c2.png",
+"urls": {
+"web": "https://www.youtube.com/results?search_query="
+}
+},
+{
+"__typename": "Search",
+"_id": "6ab28f46b4b9b7ead9f4f951",
+"name": "eBay",
+"icon": "/local/img-default/3e8f31ac-5cd4-4102-953c-8b3cfaf977f1.png",
+"urls": {
+"web": "https://www.ebay.com/sch/i.html?_nkw=&mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=5338941272&customid=search&toolid=10001&mkevt=1"
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a1da18db208971e2c90ea",
+"name": "Amazon",
+"icon": "/local/img-default/c5b71359-4658-4109-a8de-a66e58483283.png",
+"urls": {
+"web": "https://www.amazon.com/s?k="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a56663207606c846e61ca16",
+"name": "Google Map",
+"icon": "/local/img-default/b95e7847-024b-40ab-bf37-c935d61616fd.png",
+"urls": {
+"web": "https://www.google.com/maps/search/?api=1&query="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a5fc08db208971e2d0d78",
+"name": "Reddit",
+"icon": "/local/img-default/92accb37-7b24-4fae-a84f-37998bda7f4c.png",
+"urls": {
+"web": "https://reddit.com/search/?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "6a4a1c678db208971e2c8809",
+"name": "X",
+"icon": "/local/img-default/f11da715-32e5-4f8c-8c18-e38fd8735b0d.png",
+"urls": {
+"web": "https://x.com/search?q="
+}
+},
+{
+"__typename": "Search",
+"_id": "64c4a9298bb3f708d557607f",
+"name": "Bing",
+"icon": "/local/img-default/cced56eb-ea19-456f-8250-c1daf329c458.png",
+"urls": {
+"web": "https://bing.com/search?form=QBRE&q="
+}
+}
+],
+"localIcons": [
+"00ee25ef-cb96-4ce2-8c55-a30910e3be35.png",
+"044d5636-02b7-492c-8762-74e902e4ffe5.png",
+"0751e0f0-df74-468a-8d77-ea2f997567a9.png",
+"1053f188-f7e2-4f8d-85da-6d9ed257527d.jpg",
+"12025c58-9262-425f-82ca-71f480abe9d9.png",
+"14e0a9d6-1a19-47cc-a4ba-ccd2c89cee15.png",
+"1f137014-b86b-4a84-b5f2-629817d4c865.png",
+"1f23decd-9e0b-4b37-a1de-9ff37fc35f29.png",
+"235727c0-7106-449e-b21d-4f931ca67cb4.png",
+"2d3a3df4-a6a0-4f5f-95a2-02c3932d7dda.png",
+"30527dd2-a962-40c7-970b-f3b4b9df977e.png",
+"347532fa-02f1-4b22-ba2f-b3471e11258d.png",
+"3966628c-e7c9-4efd-b36a-e0665b54717f.png",
+"3e8f31ac-5cd4-4102-953c-8b3cfaf977f1.png",
+"3fd3d020-e86d-4490-8af0-6ddfa85dc74c.png",
+"4b56b231-c638-4d32-ad24-3b70f1eda236.png",
+"4f9fd076-c64b-441d-9c3d-752f9cf0a7a5.png",
+"5bf2ad69-06e8-4b27-a27b-ab5b7b49493d.png",
+"5e056bbf-b158-4e12-8a53-fe403331b08d.png",
+"6265506b6f22b67f70fa2561.png",
+"6265506c6f22b67f70fa4228.png",
+"6265507a6f22b67f70fb4b2c.png",
+"6901f1cd-9efb-4ec1-9aff-7a3ea6b40242.png",
+"7638dc24-d38e-42ac-b54b-db83004976de.png",
+"79f01525-6e37-4d0c-a3e9-e7a282ab2c71.jpg",
+"7bc6be0c-cc3c-48c4-93d9-42776b7d5546.png",
+"7f011287-2032-4d16-a1aa-2a955d95a0e5.png",
+"86785f17-f70b-4687-9d1b-6ced7c420943.jpg",
+"92accb37-7b24-4fae-a84f-37998bda7f4c.png",
+"94ba5059-1178-4b5c-9944-a3d8594a44d9.png",
+"95661817-3f56-4c42-8dfe-1e29b2c3fe9b.png",
+"9be5494b-c727-425d-ab13-43e8577ce276.png",
+"9dd2eab8-7c9b-4c59-893b-63046285fde8.png",
+"b24a083e-126f-46f1-a31e-5812841d88c2.png",
+"b42f0528-87f3-465a-989d-496dcd531917.png",
+"b95e7847-024b-40ab-bf37-c935d61616fd.png",
+"c5b71359-4658-4109-a8de-a66e58483283.png",
+"cced56eb-ea19-456f-8250-c1daf329c458.png",
+"ce55a2dc-faa4-4b78-84eb-5116e0301ca7.png",
+"d3725911-a893-45fd-8d0f-ee993373f882.png",
+"d39dd791-6656-4c11-9c00-208b5499e248.png",
+"d8ed2dc7-d77f-4fcf-9ef2-d51b66c93cb6.png",
+"e62a2a29-47d3-4ec7-8e71-45749952945d.png",
+"edc6a32e-a445-41c5-9c4a-25fd7076e88e.png",
+"f11da715-32e5-4f8c-8c18-e38fd8735b0d.png",
+"f2948e32-f090-45c8-a5a5-90e6be64f934.png",
+"f5221988-54c5-48b8-8a57-c2cb63a24e4d.png",
+"fe04ed31-47cd-4b37-84fa-9f8becfa1fcc.png"
+]
+}

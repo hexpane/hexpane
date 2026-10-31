@@ -39,22 +39,25 @@
     var db = window.__ihpLocal && window.__ihpLocal.dump();
     if (!db) { flash(btn, 'Hata'); return; }
 
-    var payload = {
-      app: 'hexpane-extension',
-      format: 1,
-      exportedAt: new Date().toISOString(),
-      screens: db.apps.length,
-      shortcuts: db.apps.reduce(function (n, row) { return n + row.length; }, 0),
-      storage: { 'ihp:local:v1': db }
-    };
+    window.__ihpLocal.exportImages().then(function (images) {
+      var payload = {
+        app: 'hexpane-extension',
+        format: 1,
+        exportedAt: new Date().toISOString(),
+        screens: db.apps.length,
+        shortcuts: db.apps.reduce(function (n, row) { return n + row.length; }, 0),
+        storage: { 'ihp:local:v1': db },
+        images: images
+      };
 
-    var url = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' }));
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'hexpane-yedek-' + stamp() + '.json';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
+      var url = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'hexpane-yedek-' + stamp() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    }).catch(function () { flash(btn, 'Hata'); });
   }
 
   function importBackup(btn) {

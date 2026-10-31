@@ -56,6 +56,28 @@
     if (!localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, JSON.stringify('ihp-local'));
   } catch (e) { /* private mode */ }
 
+  var WALLPAPER_KEY = 'lscache-USER_WALLPAPER';
+  var PREVIEW_KEY = 'ihp-wallpaper-preview';
+  var PREVIEW_EDGE = 1600;
+  var PREVIEW_QUALITY = 0.7;
+
+  try {
+    var storedWallpaper = localStorage.getItem(WALLPAPER_KEY) || '';
+    if (storedWallpaper.indexOf('blob:') >= 0) {
+      var wallpaperEntry = JSON.parse(storedWallpaper);
+      var wallpaperPreview = JSON.parse(localStorage.getItem(PREVIEW_KEY) || 'null');
+      if (wallpaperPreview && wallpaperEntry.wallpaper && wallpaperPreview.id === wallpaperEntry.wallpaper._id) {
+        ['key', 'large', 'original', 'thumbnail', 'small'].forEach(function (f) {
+          wallpaperEntry.wallpaper.image[f] = wallpaperPreview.src;
+        });
+        wallpaperEntry.updated_at = 1;
+        localStorage.setItem(WALLPAPER_KEY, JSON.stringify(wallpaperEntry));
+      } else {
+        localStorage.removeItem(WALLPAPER_KEY);
+      }
+    }
+  } catch (e) { /* private mode */ }
+
   // The app clears the token whenever it thinks the session died. Under debug,
   // record who did it — otherwise the blank-page symptom has no visible cause.
   if (DEBUG) {
@@ -340,21 +362,44 @@
     });
   }
 
-  var saveTimer = null;
-  function save() {
+  var saveTimer = null, storeFrozen = false;
+  var TAB_ID = uid();
+  function freezeStore() {
+    storeFrozen = true;
     if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      saveTimer = null;
-      try {
-        if (storageArea) {
-          var o = {}; o[STORE_KEY] = DB;
-          storageArea.set(o);
-        } else {
-          localStorage.setItem(STORE_KEY, JSON.stringify(DB));
-        }
-      } catch (e) { console.warn('[ihp-local] save failed', e); }
-    }, 200);
+    saveTimer = null;
   }
+  function save() {
+    if (storeFrozen) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(writeStore, 200);
+  }
+  function writeStore() {
+    saveTimer = null;
+    try {
+      if (storageArea) {
+        DB.writer = TAB_ID;
+        var o = {}; o[STORE_KEY] = DB;
+        storageArea.set(o);
+      } else {
+        localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+      }
+    } catch (e) { console.warn('[ihp-local] save failed', e); }
+  }
+  if (storageArea && storageArea.onChanged) {
+    storageArea.onChanged.addListener(function (changes) {
+      var next = changes[STORE_KEY] && changes[STORE_KEY].newValue;
+      if (!next || !DB || storeFrozen || saveTimer) return;
+      if (next.writer === TAB_ID || next.v !== DB.v) return;
+      DB = next;
+      loadImages();
+    });
+  }
+  window.addEventListener('pagehide', function () {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    writeStore();
+  });
 
   function uid() {
     var b = new Uint8Array(12);
@@ -387,7 +432,13 @@
     var tn = node.__typename;
     if (tn && CACHEABLE[tn] && node._id) {
       var prev = DB.objects[node._id];
-      DB.objects[node._id] = prev ? Object.assign({}, prev, node) : node;
+      var merged = prev ? Object.assign({}, prev, node) : node;
+      if (prev && /^(\/local\/|data:|ihplocal:)/.test(prev.icon || '')) {
+        merged.icon = prev.icon;
+        if (prev.iconKey !== undefined) merged.iconKey = prev.iconKey;
+        if (prev.icon_key !== undefined) merged.icon_key = prev.icon_key;
+      }
+      DB.objects[node._id] = merged;
     }
     Object.keys(node).forEach(function (k) { indexObjects(node[k]); });
   }
@@ -412,6 +463,7 @@
    * ------------------------------------------------------------------ */
 
   var IMG_URLS = {};
+  var SEARCH_CATALOG = {};
 
   function idb() {
     return new Promise(function (resolve, reject) {
@@ -440,18 +492,230 @@
       return idbTx('readonly', function (s) { return s.getAllKeys ? s.getAllKeys() : null; }).then(function (keys) {
         (keys || []).forEach(function (k, i) {
           var blob = rows[i];
-          if (blob) IMG_URLS[k] = URL.createObjectURL(blob) + '#ihp.png';
+          if (blob && !IMG_URLS[k]) IMG_URLS[k] = URL.createObjectURL(blob) + '#ihp.png';
         });
       });
     }).catch(function (e) { console.warn('[ihp-local] image load failed', e); });
   }
 
-  function saveImage(blob) {
+  /**
+   * Kucuk gorseller (ikonlar) IndexedDB yerine dogrudan data: URL olarak
+   * saklanir. Sebep: ihplocal: isaretcisi disari verilirken oturuma ozel bir
+   * blob: URL'e cozuluyor, uygulama da bu degeri localStorage'daki
+   * lscache-USER_APPS ve CACHE-PERSIST kopyalarina yaziyor. Sonraki acilista o
+   * blob: URL olu oldugu icin <img> hata veriyor ve dosme siyah kalıyordu.
+   * Duvar kagidi gibi buyuk gorseller IndexedDB'de kalir (depoyu sismeye
+   * birakmamak icin) — onlar zaten her acilista sorgudan taze geliyor.
+   */
+  var INLINE_MAX_EDGE = 512;              // bundan buyugu artik ikon degil
+  var INLINE_MAX_BYTES = 512 * 1024;
+
+  function inlineImage(blob) {
+    var type = (blob && blob.type) || '';
+    if (!blob || type.indexOf('image/') !== 0 || blob.size > INLINE_MAX_BYTES) {
+      return Promise.resolve(null);
+    }
+    if (type.indexOf('svg') >= 0) return blobToDataURL(blob).catch(function () { return null; });
+    return measureBlob(blob, 0).then(function (c) {
+      return (c.w && c.h && Math.max(c.w, c.h) <= INLINE_MAX_EDGE) ? c.src : null;
+    }).catch(function () { return null; });
+  }
+
+  function putImage(blob) {
     var id = uid();
     return idbTx('readwrite', function (s) { s.put(blob, id); }).then(function () {
       IMG_URLS[id] = URL.createObjectURL(blob) + '#ihp.png';
       return IMG_PREFIX + id;
     });
+  }
+
+  function saveImage(blob) {
+    return inlineImage(blob).then(function (data) {
+      if (data) return data;               // kendi kendine yeten, kalici deger
+      return putImage(blob);
+    });
+  }
+
+  function dropImage(ref) {
+    if (typeof ref !== 'string' || ref.indexOf(IMG_PREFIX) !== 0) return;
+    if (JSON.stringify(DB).indexOf(ref) >= 0) return;
+    var id = ref.slice(IMG_PREFIX.length), url = IMG_URLS[id];
+    idbTx('readwrite', function (s) { s.delete(id); }).then(function () {
+      delete IMG_URLS[id];
+      if (url) URL.revokeObjectURL(url.split('#')[0]);
+    }).catch(function (e) { console.warn('[ihp-local] image delete failed', e); });
+  }
+
+  function migrateDataWallpapers() {
+    var FIELDS = ['key', 'large', 'original', 'thumbnail', 'small'];
+    var holders = (DB.wallpapers || []).slice();
+    Object.keys(DB.objects || {}).forEach(function (k) {
+      if (DB.objects[k] && DB.objects[k].__typename === 'Wallpaper') holders.push(DB.objects[k]);
+    });
+    if (DB.userWallpaper && DB.userWallpaper.wallpaper) holders.push(DB.userWallpaper.wallpaper);
+    var urls = {};
+    holders.forEach(function (w) {
+      var large = w.image && w.image.large;
+      if (typeof large === 'string' && large.indexOf('data:image/') === 0) urls[large] = 1;
+    });
+    var list = Object.keys(urls);
+    if (!list.length) return Promise.resolve(0);
+    var map = {};
+    return Promise.all(list.map(function (u) {
+      return putImage(dataURLToBlob(u)).then(function (ref) { map[u] = ref; });
+    })).then(function () {
+      holders.forEach(function (w) {
+        FIELDS.forEach(function (f) {
+          if (w.image && map[w.image[f]]) w.image[f] = map[w.image[f]];
+        });
+      });
+      if (DB.userWallpaper) DB.userWallpaper.updated_at = now();
+      save();
+      return list.length;
+    });
+  }
+
+  /**
+   * Once kaydedilmis kucuk ikonlari (ihplocal: isaretcisi) data: URL'e cevirir.
+   * Yalnizca ikon alanlarina dokunur; duvar kagitlari isaretci olarak kalir.
+   * Bir sey degistiyse appsUpdatedAt tazelenir, boylece uygulama izgarayi
+   * localStorage kopyasindan degil bizden yeniden okur.
+   */
+  function migrateInlineIcons() {
+    var ICON_FIELDS = ['icon', 'iconKey', 'icon_key'];
+    var holders = [];
+    var push = function (o) { if (o && typeof o === 'object') holders.push(o); };
+    (DB.websites || []).forEach(push);
+    (DB.searchs || []).forEach(push);
+    Object.keys(DB.aliases || {}).forEach(function (k) { push(DB.aliases[k]); });
+    Object.keys(DB.objects || {}).forEach(function (k) { push(DB.objects[k]); });
+    (DB.websites || []).forEach(function (w) { push(w.aliasWebsite); push(w.alias_website); });
+
+    var ids = {};
+    holders.forEach(function (o) {
+      ICON_FIELDS.forEach(function (f) {
+        var v = o[f];
+        if (typeof v === 'string' && v.indexOf(IMG_PREFIX) === 0) ids[v.slice(IMG_PREFIX.length)] = 1;
+      });
+    });
+    var list = Object.keys(ids);
+    if (!list.length) return Promise.resolve(0);
+
+    var map = {};
+    return Promise.all(list.map(function (id) {
+      return idbTx('readonly', function (s) { return s.get(id); }).then(function (blob) {
+        if (!blob) return;
+        return inlineImage(blob).then(function (data) { if (data) map[id] = data; });
+      }).catch(function () { });
+    })).then(function () {
+      var hits = 0;
+      holders.forEach(function (o) {
+        ICON_FIELDS.forEach(function (f) {
+          var v = o[f];
+          if (typeof v !== 'string' || v.indexOf(IMG_PREFIX) !== 0) return;
+          var data = map[v.slice(IMG_PREFIX.length)];
+          if (data) { o[f] = data; hits++; }
+        });
+      });
+      if (!hits) return 0;
+      DB.appsUpdatedAt = now();
+      save();
+      log('inlined', hits, 'icon fields');
+      return hits;
+    });
+  }
+
+  function storedIcon(v) {
+    if (typeof v !== 'string') return v;
+    if (v.indexOf('img/') === 0) return '/local/' + v;
+    if (v.indexOf('blob:') === 0) {
+      var id = Object.keys(IMG_URLS).filter(function (k) { return IMG_URLS[k] === v; })[0];
+      return id ? IMG_PREFIX + id : v;
+    }
+    return v;
+  }
+
+  function refreshWallpaperPreview() {
+    var w = DB.userWallpaper && DB.userWallpaper.wallpaper;
+    var key = w && w.image && w.image.large;
+    if (typeof key !== 'string' || key.indexOf(IMG_PREFIX) !== 0) {
+      try { localStorage.removeItem(PREVIEW_KEY); } catch (e) { /* private mode */ }
+      return Promise.resolve(false);
+    }
+    try {
+      var current = JSON.parse(localStorage.getItem(PREVIEW_KEY) || 'null');
+      if (current && current.id === w._id) return Promise.resolve(false);
+    } catch (e) { /* bozuk kayit yeniden uretilir */ }
+    return idbTx('readonly', function (s) { return s.get(key.slice(IMG_PREFIX.length)); }).then(function (blob) {
+      return blob ? createImageBitmap(blob) : null;
+    }).then(function (bmp) {
+      if (!bmp) return false;
+      var scale = Math.min(1, PREVIEW_EDGE / Math.max(bmp.width, bmp.height));
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(bmp.width * scale);
+      cv.height = Math.round(bmp.height * scale);
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+      bmp.close();
+      localStorage.setItem(PREVIEW_KEY, JSON.stringify({
+        id: w._id, src: cv.toDataURL('image/jpeg', PREVIEW_QUALITY) + '#ihp.jpg'
+      }));
+      return true;
+    }).catch(function (e) { log('wallpaper preview failed', e); return false; });
+  }
+
+  function migrateRemoteIcons() {
+    var names = {};
+    (SEARCH_CATALOG.localIcons || []).forEach(function (n) { names[n] = 1; });
+    var localize = function (o) {
+      if (!o || typeof o.icon !== 'string') return false;
+      var m = /^https?:\/\/res\.ihomepage\.cn\/(?:[^?#]*\/)?([^\/?#]+)/.exec(o.icon);
+      if (!m || !names[m[1]]) return false;
+      o.icon = '/local/img-default/' + m[1];
+      return true;
+    };
+    var hits = 0;
+    Object.keys(DB.objects || {}).forEach(function (k) { if (localize(DB.objects[k])) hits++; });
+    (DB.searchs || []).forEach(function (o) { if (localize(o)) hits++; });
+    var us = DB.userSearch, searchHit = false;
+    if (us) {
+      if (localize(us.main_search)) searchHit = true;
+      (us.search || []).forEach(function (o) { if (localize(o)) searchHit = true; });
+      if (searchHit) { us.updated_at = now(); hits++; }
+    }
+    if (DB.userTranslate && localize(DB.userTranslate.translate)) {
+      DB.userTranslate.updated_at = now();
+      hits++;
+    }
+    if (hits) {
+      DB.appsUpdatedAt = now();
+      save();
+    }
+    return hits;
+  }
+
+  function migrateIconPaths() {
+    var holders = [];
+    var push = function (o) { if (o && typeof o === 'object') holders.push(o); };
+    (DB.websites || []).forEach(function (w) { push(w); push(w.aliasWebsite); push(w.alias_website); });
+    (DB.searchs || []).forEach(push);
+    Object.keys(DB.aliases || {}).forEach(function (k) { push(DB.aliases[k]); });
+    Object.keys(DB.objects || {}).forEach(function (k) {
+      var o = DB.objects[k];
+      push(o);
+      if (o) { push(o.aliasWebsite); push(o.alias_website); }
+    });
+    var hits = 0;
+    holders.forEach(function (o) {
+      if (typeof o.icon === 'string' && o.icon.indexOf('img/') === 0) {
+        o.icon = storedIcon(o.icon);
+        hits++;
+      }
+    });
+    if (hits) {
+      DB.appsUpdatedAt = now();
+      save();
+    }
+    return hits;
   }
 
   /** swap ihplocal: markers for this session's blob URLs on the way out */
@@ -516,6 +780,17 @@
     return r;
   }
 
+  function markSubscriptions(node) {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(markSubscriptions); return; }
+    if (node.__typename === 'RSS' && node._id && 'subscription' in node) {
+      node.subscription = (DB.rss.subscribed.indexOf(node._id) >= 0) ? {
+        __typename: 'RSSSubscription', is_subscribed: true, is_read: true
+      } : null;
+    }
+    Object.keys(node).forEach(function (k) { markSubscriptions(node[k]); });
+  }
+
   function remote(query, variables) {
     var headers = Object.assign({}, anonHeaders(lastHeaders), { 'content-type': 'application/json' });
     return REAL_FETCH(ENDPOINT, {
@@ -523,7 +798,7 @@
       body: JSON.stringify({ query: query, variables: variables || {} })
     }).then(function (r) { return r.json(); }).then(function (j) {
       scrubAuthErrors(j);
-      if (j && j.data) { indexObjects(unalias(j.data)); save(); }
+      if (j && j.data) { markSubscriptions(j.data); indexObjects(unalias(j.data)); save(); }
       return j;
     });
   }
@@ -642,6 +917,12 @@
 
   var RESOLVERS = {
     Query: {
+      allSearch: function () { return SEARCH_CATALOG.allSearch || []; },
+      defaultMainSearch: function () { return SEARCH_CATALOG.defaultMainSearch || null; },
+      defaultSearch: function () { return SEARCH_CATALOG.defaultSearch || []; },
+      search: function (_p, args) {
+        return (SEARCH_CATALOG.allSearch || []).filter(function (x) { return x.name === args.name; })[0] || null;
+      },
       viewer: function () { return VIEWER; },
       // Guncellenecek bir sey yok. Uygulama surum karsilastirmasi yapmiyor:
       //   const e = await query(newVersion); e.data?.newVersion && em(...)
@@ -748,7 +1029,9 @@
       latestRSSList: function (_p, args, ctx, sel) {
         return rssByIds(DB.rss.subscribed, sel.sel, ctx);
       },
-      RSSFeedList: function (_p, _a, ctx, sel) { return forwardField('RSSFeedList', sel, ctx); },
+      RSSFeedList: function (_p, args, ctx, sel) {
+        return args.rss_id ? forwardField('RSSFeedList', sel, ctx) : subscribedFeeds(args, ctx, sel);
+      },
       newRSSFeedCount: function () { return 0; },
       unreadUserRSSSubscriptionTotal: function () { return 0; },
       playground: function () { return null; }
@@ -774,36 +1057,47 @@
         var w = DB.objects[args.wallpaper_id] ||
           DB.wallpapers.filter(function (x) { return x._id === args.wallpaper_id; })[0];
         if (w) {
+          var prevW = DB.userWallpaper && DB.userWallpaper.wallpaper;
           DB.userWallpaper = {
             __typename: 'UserWallpaper', wallpaper: w,
             opacity: args.opacity, blur: args.blur, updated_at: now()
           };
+          if (prevW && prevW._id !== w._id && prevW.image) dropImage(prevW.image.large);
         } else if (DB.userWallpaper) {
           DB.userWallpaper = Object.assign({}, DB.userWallpaper, {
             opacity: args.opacity, blur: args.blur, updated_at: now()
           });
         }
         save();
+        refreshWallpaperPreview();
         return true;
       },
       createWallpaper: function (_p, args) {
-        var w = { __typename: 'Wallpaper', _id: uid(), image: imageObject(args.url) };
-        DB.wallpapers.unshift(w);
-        DB.objects[w._id] = w;
-        save();
-        return w;
+        var stored = String(args.url).indexOf('data:image/') === 0
+          ? putImage(dataURLToBlob(args.url)) : Promise.resolve(args.url);
+        return stored.then(function (url) {
+          var w = { __typename: 'Wallpaper', _id: uid(), image: imageObject(url) };
+          DB.wallpapers.unshift(w);
+          DB.objects[w._id] = w;
+          save();
+          return w;
+        });
       },
       removeWallpaper: function (_p, args) {
+        var gone = DB.wallpapers.filter(function (w) { return w._id === args._id; })[0];
         DB.wallpapers = DB.wallpapers.filter(function (w) { return w._id !== args._id; });
+        delete DB.objects[args._id];
+        if (gone && gone.image) dropImage(gone.image.large);
         save();
         return true;
       },
 
       createWebsite: function (_p, args) {
+        var newIcon = storedIcon(args.icon) || '';
         var w = {
           __typename: 'Website', _id: uid(), name: args.name, url: args.url,
-          size: 'S', description: args.description || null, icon: args.icon || '',
-          iconKey: args.icon || '', icon_key: args.icon || '', type: 'Website',
+          size: 'S', description: args.description || null, icon: newIcon,
+          iconKey: newIcon, icon_key: newIcon, type: 'Website',
           user_id: DB.userinfo._id, aliasWebsite: null, alias_website: null,
           is_affiliate_ad: false, is_deleted: false, app_grid_position: null
         };
@@ -813,7 +1107,8 @@
         return w;
       },
       updateWebsite: function (_p, args) {
-        var u = args.update || {};
+        var u = Object.assign({}, args.update || {});
+        if (u.icon != null) u.icon = storedIcon(u.icon);
         [DB.websites].forEach(function (list) {
           list.forEach(function (w, i) {
             if (w._id !== args._id) return;
@@ -845,9 +1140,10 @@
       },
 
       createAliasWebsite: function (_p, args) {
+        var aliasIcon = storedIcon(args.icon);
         var a = {
           __typename: 'AliasWebsite', _id: uid(), name: args.name,
-          url: args.url, icon: args.icon, iconKey: args.icon, icon_key: args.icon
+          url: args.url, icon: aliasIcon, iconKey: aliasIcon, icon_key: aliasIcon
         };
         DB.aliases[args.website_id] = a;
         var base = DB.objects[args.website_id];
@@ -856,9 +1152,14 @@
         return a;
       },
       updateAliasWebsite: function (_p, args) {
+        var aliasUpdate = Object.assign({}, args.update || {});
+        if (aliasUpdate.icon != null) {
+          aliasUpdate.icon = storedIcon(aliasUpdate.icon);
+          aliasUpdate.iconKey = aliasUpdate.icon_key = aliasUpdate.icon;
+        }
         Object.keys(DB.aliases).forEach(function (wid) {
           if (DB.aliases[wid]._id !== args._id) return;
-          DB.aliases[wid] = Object.assign({}, DB.aliases[wid], args.update || {});
+          DB.aliases[wid] = Object.assign({}, DB.aliases[wid], aliasUpdate);
           var base = DB.objects[wid];
           if (base) DB.objects[wid] = Object.assign({}, base, { aliasWebsite: DB.aliases[wid], alias_website: DB.aliases[wid] });
         });
@@ -888,12 +1189,15 @@
             urls: u.urls ? Object.assign({}, s.urls, { web: u.urls.web }) : s.urls
           });
           DB.objects[s._id] = Object.assign({}, DB.searchs[i], { __typename: 'Search' });
+          refreshUserSearch(s._id, DB.objects[s._id]);
         });
         save();
         return true;
       },
       removeSearch: function (_p, args) {
         DB.searchs = DB.searchs.filter(function (s) { return s._id !== args._id; });
+        delete DB.objects[args._id];
+        refreshUserSearch(args._id, null);
         save();
         return true;
       },
@@ -1100,9 +1404,29 @@
     });
   }
 
+  function refreshUserSearch(id, live) {
+    var us = DB.userSearch;
+    if (!us) return;
+    var inList = (us.search || []).some(function (s) { return s._id === id; });
+    var isMain = us.main_search && us.main_search._id === id;
+    if (!inList && !isMain) return;
+    var list = [];
+    (us.search || []).forEach(function (s) {
+      if (s._id !== id) list.push(s);
+      else if (live) list.push(live);
+    });
+    var main = us.main_search;
+    if (isMain) {
+      main = live || list[0] || Object.keys(DB.objects).map(function (k) { return DB.objects[k]; })
+        .filter(function (o) { return o && o.__typename === 'Search'; })[0] || main;
+    }
+    DB.userSearch = Object.assign({}, us, { main_search: main, search: list, updated_at: now() });
+  }
+
   function setUserSearch(mainId, ids) {
     var pick = function (id) {
-      var o = DB.objects[id] || DB.searchs.filter(function (s) { return s._id === id; })[0];
+      var o = DB.objects[id] || DB.searchs.filter(function (s) { return s._id === id; })[0] ||
+        (SEARCH_CATALOG.allSearch || []).filter(function (s) { return s._id === id; })[0];
       return o ? Object.assign({}, o, { __typename: 'Search' }) : null;
     };
     var list = (ids || []).map(pick).filter(Boolean);
@@ -1112,28 +1436,637 @@
     return DB.userSearch;
   }
 
+  /* ------------------------------------------------------------------ *
+   * Favicon cozumu
+   *
+   * Uygulamanin ikon hatti bir gorseli canvas'a cizip toDataURL ile
+   * okuyor. Uzak bir favicon adresi bu hattan gecemiyor: crossOrigin ile
+   * yuklenmiyor (favicon servisleri ACAO gondermiyor), crossOrigin'siz
+   * yuklenince de canvas "tainted" olup toDataURL SecurityError atiyor.
+   * Bu yuzden ikonu burada indirip **data: URL** olarak veriyoruz — ayni
+   * kokenli oldugu icin ne CORS ne taint sorunu kaliyor.
+   *
+   * Kaynak secimi "ilk basarili" degil "en buyugu kazanir": her sitede farkli
+   * bir servis daha iyisini veriyor (music.youtube gstatic'te 128, gemini
+   * DuckDuckGo'da 512, github ikisinde de 32 ama kendi sitesinde 512).
+   * Cikan ikon fix_icons.py'nin urettigi bicime normalize ediliyor: 128x128
+   * opak, logo kontrast bir kartin ortasinda. Uygulama dosemeye zemin
+   * uygulamiyor (index-DYZBvkyo.css), o yuzden seffaf ikon duvar kagidinin
+   * ustunde ciplak duruyor. Istek yalnizca kisayol eklenirken atilir.
+   * ------------------------------------------------------------------ */
+
+  var FAVICON_SOURCES = [
+    function (host) {
+      return 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON' +
+        '&fallback_opts=TYPE,SIZE,URL&size=128&url=' + encodeURIComponent('https://' + host);
+    },
+    function (host) { return 'https://icons.duckduckgo.com/ip3/' + host + '.ico'; }
+  ];
+
+  // fix_icons.py ile birebir esiklerin hepsi (SIZE, MIN_OK, PAD ve dostlari)
+  var ICON_SIZE = 128;
+  var ICON_MIN_OK = 64;                                        // altindaki upscale sayilir
+  var ICON_PAD = 0.14;
+  var ICON_INNER = Math.floor(ICON_SIZE * (1 - 2 * ICON_PAD)); // 92
+  var ICON_SRC_MAX = 512;                                      // getImageData maliyet siniri
+  var ALPHA_TRIM = 8;
+  var ALPHA_LUM = 40;
+  var OPAQUE_MIN_A = 250;
+  var CORNER_K_DIV = 32;
+  var CORNER_SPREAD = 12;
+  var BLEED_DIFF = 40;
+  var BLEED_COVER = 0.92;
+  var LUM_LIGHT = 150;
+  var BG_DARK = [28, 28, 30];
+  var BG_LIGHT = [255, 255, 255];
+  var ASPECT_TOL = 0.05;
+  var BADGE_MARK = "data-ihp='badge'";
+
+  var ICON_FAST_MS = 2000;    // gstatic / ddg / _favicon basina
+  var ICON_HTML_MS = 2500;    // sitenin kok HTML'i
+  var ICON_FILE_MS = 2500;    // aday dosya basina
+  var ICON_SITE_MS = 4000;    // site dalinin toplam butcesi
+
+  function blobToDataURL(blob) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(fr.error || new Error('read failed')); };
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  function withTimeout(p, ms, ac) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (done) return;
+        done = true;
+        if (ac) { try { ac.abort(); } catch (e) { /* yoksay */ } }
+        reject(new Error('timeout'));
+      }, ms);
+      p.then(function (v) { if (!done) { done = true; clearTimeout(timer); resolve(v); } },
+        function (e) { if (!done) { done = true; clearTimeout(timer); reject(e); } });
+    });
+  }
+
+  /** reddetmeyen sarmalayici: hata yerine null doner */
+  function settled(p) {
+    return p.then(function (v) { return v; }, function () { return null; });
+  }
+
+  /** indirir; gorsel degilse/bossa/gec kalirsa reddeder */
+  function fetchImage(url, ms) {
+    var ac = window.AbortController ? new AbortController() : null;
+    var opts = { credentials: 'omit' };
+    if (ac) opts.signal = ac.signal;
+    return withTimeout(REAL_FETCH(url, opts).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);   // 404'te de gorsel dondururler
+      return r.blob();
+    }).then(function (b) {
+      if (!b || b.size < 100 || (b.type || '').indexOf('image') !== 0) throw new Error('not an image');
+      return b;
+    }), ms || ICON_FAST_MS, ac);
+  }
+
+  function fetchImageDataURL(url, ms) {
+    return fetchImage(url, ms).then(blobToDataURL);
+  }
+
+  /** alan adindan turetilen renkte harf rozeti — base64, cunku kn() atob bekliyor */
+  function letterBadge(name, host) {
+    var ch = ((name || host || '?').trim()[0] || '?').toUpperCase();
+    var seed = 0;
+    for (var i = 0; i < (host || '').length; i++) seed = (seed * 31 + host.charCodeAt(i)) >>> 0;
+    var rgb = hsvToRgb((seed % 360) / 360, 0.55, 0.72);
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128' " + BADGE_MARK + ">" +
+      "<rect width='128' height='128' rx='28' fill='rgb(" + rgb.join(',') + ")'/>" +
+      "<text x='64' y='64' fill='white' font-family='-apple-system,Segoe UI,sans-serif' " +
+      "font-size='68' font-weight='600' text-anchor='middle' dominant-baseline='central'>" +
+      ch.replace(/&/g, '&amp;').replace(/</g, '&lt;') + "</text></svg>";
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  }
+
+  function hsvToRgb(h, s, v) {
+    var i = Math.floor(h * 6), f = h * 6 - i;
+    var p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+    var r = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6];
+    return r.map(function (x) { return Math.round(x * 255); });
+  }
+
+  /**
+   * Chrome'un kendi favicon deposu: `_favicon/` ayni kokenli oldugu icin
+   * CORS'a hic takilmaz ve ag istegi de gerektirmez — yalnizca manifest'teki
+   * "favicon" izni. Tarayicinin ziyaret ettigin sitelerin ikonunu tuttugu yer,
+   * dolayisiyla host izinleri calismasa bile gercek logo gelir.
+   * Bilinmeyen site icin jenerik bir kure donduruyor; onu ayirmak icin bir
+   * kez sahte adresle sorup sonucu karsilastiriyoruz.
+   */
+  var CHROME_FAVICON_FALLBACK = null;
+
+  function chromeFaviconURL(pageUrl) {
+    return chrome.runtime.getURL('_favicon/?pageUrl=' + encodeURIComponent(pageUrl) + '&size=128');
+  }
+
+  function faviconViaChrome(url) {
+    if (!(window.chrome && chrome.runtime && chrome.runtime.getURL)) {
+      return Promise.reject(new Error('no chrome api'));
+    }
+    // getURL senkron patlarsa (izin yok) zincirin tamami cokmesin
+    try { chromeFaviconURL(url); } catch (e) { return Promise.reject(e); }
+    var probe = CHROME_FAVICON_FALLBACK !== null
+      ? Promise.resolve(CHROME_FAVICON_FALLBACK)
+      : fetchImageDataURL(chromeFaviconURL('https://ihp-local-unknown.invalid/'))
+        .catch(function () { return ''; })
+        .then(function (d) { CHROME_FAVICON_FALLBACK = d; return d; });
+    return probe.then(function (generic) {
+      return fetchImageDataURL(chromeFaviconURL(url)).then(function (d) {
+        if (generic && d === generic) throw new Error('chrome has no icon for this site');
+        return d;
+      });
+    });
+  }
+
+  /* ---------------- adaylari olcup en buyugunu secme ---------------- */
+
+  function decodeImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var timer = setTimeout(function () { reject(new Error('decode timeout')); }, 5000);
+      img.onload = function () { clearTimeout(timer); resolve(img); };
+      img.onerror = function () { clearTimeout(timer); reject(new Error('decode failed')); };
+      img.src = src;
+    });
+  }
+
+  /** {src, w, h, mime, order} — blob: uzerinden decode, base64 sismesi yok */
+  function measureBlob(blob, order) {
+    var objURL = URL.createObjectURL(blob);
+    var free = function () { URL.revokeObjectURL(objURL); };
+    return decodeImage(objURL).then(function (img) {
+      var w = img.naturalWidth || 0, h = img.naturalHeight || 0;
+      return blobToDataURL(blob).then(function (data) {
+        return { src: data, w: w, h: h, mime: blob.type || '', order: order };
+      });
+    }).then(function (c) { free(); return c; }, function (e) { free(); throw e; });
+  }
+
+  function measureDataURL(data, order) {
+    return decodeImage(data).then(function (img) {
+      return {
+        src: data, w: img.naturalWidth || 0, h: img.naturalHeight || 0,
+        mime: (data.split(';')[0] || '').split(':')[1] || '', order: order
+      };
+    });
+  }
+
+  /** vektor her rasteri yener; digerlerinde en uzun kenar */
+  function iconScore(c) {
+    if (!c) return -1;
+    if ((c.mime || '').indexOf('svg') >= 0) return 1000;
+    return Math.max(c.w, c.h);
+  }
+
+  function pickBest(list) {
+    var best = null;
+    list.forEach(function (c) {
+      if (!c) return;
+      if (!best) { best = c; return; }
+      var a = iconScore(c), b = iconScore(best);
+      if (a > b || (a === b && c.order < best.order)) best = c;
+    });
+    return best;
+  }
+
+  /* ---------------- fix_icons.py'nin canvas portu ---------------- */
+
+  function makeCanvas(w, h) {
+    var cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    return cv;
+  }
+
+  function ctx2d(cv) {
+    var c = cv.getContext('2d', { willReadFrequently: true });
+    c.imageSmoothingEnabled = true;
+    if ('imageSmoothingQuality' in c) c.imageSmoothingQuality = 'high';
+    return c;
+  }
+
+  /**
+   * LANCZOS'un karsiligi: tek adimli bilinear buyuk kucultmelerde (512 -> 92)
+   * aliasing yapiyor, o yuzden hedefin iki katina inene kadar yarilayarak
+   * kucultup son cizimi oyle yapiyoruz.
+   */
+  function drawScaled(src, sx, sy, sw, sh, dctx, dx, dy, dw, dh) {
+    var cur = src, cx = sx, cy = sy, cw = sw, ch = sh;
+    while (cw > dw * 2 && ch > dh * 2) {
+      var nw = Math.max(dw, Math.floor(cw / 2)), nh = Math.max(dh, Math.floor(ch / 2));
+      var tmp = makeCanvas(nw, nh);
+      ctx2d(tmp).drawImage(cur, cx, cy, cw, ch, 0, 0, nw, nh);
+      cur = tmp; cx = 0; cy = 0; cw = nw; ch = nh;
+    }
+    dctx.drawImage(cur, cx, cy, cw, ch, dx, dy, dw, dh);
+  }
+
+  /** kaynagi dogal boyutunda (en fazla ICON_SRC_MAX) rasterlestirir */
+  function rasterOf(img) {
+    var w = img.naturalWidth || 0, h = img.naturalHeight || 0;
+    if (!w || !h) { w = ICON_SRC_MAX; h = ICON_SRC_MAX; }   // ic boyutu olmayan SVG
+    var s = Math.min(1, ICON_SRC_MAX / Math.max(w, h));
+    var rw = Math.max(1, Math.round(w * s)), rh = Math.max(1, Math.round(h * s));
+    var cv = makeCanvas(rw, rh), c = ctx2d(cv);
+    c.drawImage(img, 0, 0, rw, rh);
+    return { cv: cv, w: rw, h: rh, data: c.getImageData(0, 0, rw, rh).data };
+  }
+
+  function minAlpha(d) {
+    var m = 255;
+    for (var i = 3; i < d.length; i += 4) {
+      if (d[i] < m) { m = d[i]; if (!m) return 0; }
+    }
+    return m;
+  }
+
+  /** PIL getbbox() gibi: sag/alt sinir haric */
+  function alphaBBox(d, w, h, thr) {
+    var x0 = w, y0 = h, x1 = 0, y1 = 0, found = false, x, y;
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        if (d[(y * w + x) * 4 + 3] > thr) {
+          found = true;
+          if (x < x0) x0 = x;
+          if (x >= x1) x1 = x + 1;
+          if (y < y0) y0 = y;
+          if (y >= y1) y1 = y + 1;
+        }
+      }
+    }
+    return found ? [x0, y0, x1, y1] : null;
+  }
+
+  /** dort kosenin ortalamasi ve sapmasi (corner_bg portu) */
+  function cornerBG(d, w, h) {
+    var k = Math.min(w, h, Math.max(2, Math.floor(w / CORNER_K_DIV)));
+    var pts = [[0, 0], [w - k, 0], [0, h - k], [w - k, h - k]];
+    var cs = pts.map(function (p) {
+      var sr = 0, sg = 0, sb = 0, n = 0, x, y, i;
+      for (y = p[1]; y < p[1] + k; y++) {
+        for (x = p[0]; x < p[0] + k; x++) {
+          i = (y * w + x) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; n++;
+        }
+      }
+      return [Math.floor(sr / n), Math.floor(sg / n), Math.floor(sb / n)];
+    });
+    var avg = [0, 1, 2].map(function (ch) {
+      return Math.floor((cs[0][ch] + cs[1][ch] + cs[2][ch] + cs[3][ch]) / 4);
+    });
+    var spread = 0;
+    cs.forEach(function (c) {
+      [0, 1, 2].forEach(function (ch) {
+        var v = Math.abs(c[ch] - avg[ch]);
+        if (v > spread) spread = v;
+      });
+    });
+    return { bg: avg, spread: spread };
+  }
+
+  /** PIL'in L cevrimi 601 agirlikli — max kanal farki kullanilmaz */
+  function diffBBox(d, w, h, bg, thr) {
+    var x0 = w, y0 = h, x1 = 0, y1 = 0, found = false, x, y, i, dl;
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        i = (y * w + x) * 4;
+        dl = 0.299 * Math.abs(d[i] - bg[0]) + 0.587 * Math.abs(d[i + 1] - bg[1]) +
+          0.114 * Math.abs(d[i + 2] - bg[2]);
+        if (dl > thr) {
+          found = true;
+          if (x < x0) x0 = x;
+          if (x >= x1) x1 = x + 1;
+          if (y < y0) y0 = y;
+          if (y >= y1) y1 = y + 1;
+        }
+      }
+    }
+    return found ? [x0, y0, x1, y1] : null;
+  }
+
+  /** gorunur piksellerin ortalama parlakligi (~40x40 orneklem, ham sRGB) */
+  function sampleLuminance(d, w, x0, y0, cw, ch) {
+    var stepY = Math.max(1, Math.floor(ch / 40)), stepX = Math.max(1, Math.floor(cw / 40));
+    var tot = 0, n = 0, x, y, i;
+    for (y = 0; y < ch; y += stepY) {
+      for (x = 0; x < cw; x += stepX) {
+        i = ((y0 + y) * w + (x0 + x)) * 4;
+        if (d[i + 3] > ALPHA_LUM) {
+          tot += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+          n++;
+        }
+      }
+    }
+    return n ? tot / n : 0;
+  }
+
+  /** tile()/pad_onto() ortak kuyrugu: 92'lik kutuya sigdir, karta ortala */
+  function paste(srcCv, sx, sy, sw, sh, bg) {
+    var scale = Math.min(ICON_INNER / sw, ICON_INNER / sh);   // kisitsiz: kucuk cizim buyur
+    var dw = Math.max(1, Math.floor(sw * scale)), dh = Math.max(1, Math.floor(sh * scale));
+    var out = makeCanvas(ICON_SIZE, ICON_SIZE), o = ctx2d(out);
+    o.fillStyle = 'rgb(' + bg.join(',') + ')';
+    o.fillRect(0, 0, ICON_SIZE, ICON_SIZE);
+    drawScaled(srcCv, sx, sy, sw, sh, o,
+      Math.floor((ICON_SIZE - dw) / 2), Math.floor((ICON_SIZE - dh) / 2), dw, dh);
+    return out;
+  }
+
+  /** opak kaynagi 128 kareye getirir; kare degilse kenar rengiyle doldurur */
+  function squareOpaque(r) {
+    var cv = makeCanvas(ICON_SIZE, ICON_SIZE), c = ctx2d(cv);
+    if (Math.abs(r.w / r.h - 1) <= ASPECT_TOL) {
+      drawScaled(r.cv, 0, 0, r.w, r.h, c, 0, 0, ICON_SIZE, ICON_SIZE);
+    } else {
+      // object-fit: cover kare olmayani kirpardi, biz zemine oturtuyoruz
+      var cb = cornerBG(r.data, r.w, r.h);
+      var bg = cb.spread <= CORNER_SPREAD ? cb.bg
+        : (sampleLuminance(r.data, r.w, 0, 0, r.w, r.h) > LUM_LIGHT ? BG_DARK : BG_LIGHT);
+      c.fillStyle = 'rgb(' + bg.join(',') + ')';
+      c.fillRect(0, 0, ICON_SIZE, ICON_SIZE);
+      var s = Math.min(ICON_INNER / r.w, ICON_INNER / r.h);
+      var dw = Math.max(1, Math.floor(r.w * s)), dh = Math.max(1, Math.floor(r.h * s));
+      drawScaled(r.cv, 0, 0, r.w, r.h, c,
+        Math.floor((ICON_SIZE - dw) / 2), Math.floor((ICON_SIZE - dh) / 2), dw, dh);
+    }
+    return { cv: cv, data: c.getImageData(0, 0, ICON_SIZE, ICON_SIZE).data };
+  }
+
+  function isLetterBadge(u) {
+    if (!u || u.indexOf('data:image/svg+xml;base64,') !== 0) return false;
+    try { return atob(u.split(',')[1]).indexOf(BADGE_MARK) >= 0; } catch (e) { return false; }
+  }
+
+  /**
+   * Her ikonu fix_icons.py'nin urettigi bicime getirir: 128x128, tamamen opak,
+   * logo 92'lik kutunun ortasinda. Seffaf ikon kontrast bir karta oturur,
+   * cerceveye dayanan opak ikon kendi kenar rengiyle yeniden ortalanir,
+   * fotograf/desen olanlar yalnizca yeniden olceklenir.
+   */
+  function normalizeIcon(src) {
+    if (isLetterBadge(src)) return Promise.resolve(src);   // rozet zaten kartin kendisi
+    return decodeImage(src).then(function (img) {
+      var r = rasterOf(img);
+      if (minAlpha(r.data) < OPAQUE_MIN_A) {
+        var bb = alphaBBox(r.data, r.w, r.h, ALPHA_TRIM);
+        if (!bb) throw new Error('empty image');
+        var lum = sampleLuminance(r.data, r.w, bb[0], bb[1], bb[2] - bb[0], bb[3] - bb[1]);
+        return paste(r.cv, bb[0], bb[1], bb[2] - bb[0], bb[3] - bb[1],
+          lum > LUM_LIGHT ? BG_DARK : BG_LIGHT).toDataURL('image/png');
+      }
+      var sq = squareOpaque(r);
+      var cb = cornerBG(sq.data, ICON_SIZE, ICON_SIZE);
+      if (cb.spread > CORNER_SPREAD) return sq.cv.toDataURL('image/png');   // foto/desen
+      var bb2 = diffBBox(sq.data, ICON_SIZE, ICON_SIZE, cb.bg, BLEED_DIFF);
+      if (!bb2) return sq.cv.toDataURL('image/png');
+      var cov = Math.max((bb2[2] - bb2[0]) / ICON_SIZE, (bb2[3] - bb2[1]) / ICON_SIZE);
+      if (cov < BLEED_COVER) return sq.cv.toDataURL('image/png');
+      return paste(sq.cv, bb2[0], bb2[1], bb2[2] - bb2[0], bb2[3] - bb2[1], cb.bg)
+        .toDataURL('image/png');
+    });
+  }
+
+  function normalizeOrKeep(src) {
+    return normalizeIcon(src).catch(function () { return src; });
+  }
+
+  /* ---------------- sitenin kendi ikonlari (best_from_site portu) ---------------- */
+
+  function siteIconCandidates(html, root) {
+    var out = [], re = /<link[^>]+>/gi, m, tag, hm, sm, score, href;
+    while ((m = re.exec(html))) {
+      tag = m[0];
+      if (!/rel=["']?[^"'>]*icon/i.test(tag)) continue;
+      hm = /href=["']([^"']+)/i.exec(tag);
+      if (!hm) continue;
+      sm = /sizes=["']?(\d+)/i.exec(tag);
+      score = sm ? (parseInt(sm[1], 10) || 0)
+        : (tag.toLowerCase().indexOf('apple-touch') >= 0 ? 180 : 0);
+      try { href = new URL(hm[1], root).href; } catch (e) { continue; }
+      out.push({ score: score, url: href });
+    }
+    out.sort(function (a, b) { return b.score - a.score; });
+    out.push({ score: 0, url: root + 'apple-touch-icon.png' });
+    out.push({ score: 0, url: root + 'apple-touch-icon-precomposed.png' });
+    return out.slice(0, 6);
+  }
+
+  function bestFromSite(host) {
+    var root = 'https://' + host + '/';
+    var ac = window.AbortController ? new AbortController() : null;
+    var opts = { credentials: 'omit' };
+    if (ac) opts.signal = ac.signal;
+    var deadline = Date.now() + ICON_SITE_MS;
+    return withTimeout(REAL_FETCH(root, opts).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.text();
+    }), ICON_HTML_MS, ac).then(function (html) {
+      var cands = siteIconCandidates(html.slice(0, 200000), root);
+      var i = 0;
+      var next = function () {
+        if (i >= cands.length || Date.now() > deadline) return null;
+        var u = cands[i++].url;
+        return fetchImage(u, ICON_FILE_MS).then(function (b) {
+          return measureBlob(b, 0);
+        }).then(function (c) {
+          return iconScore(c) >= ICON_MIN_OK ? c : next();
+        }).catch(next);
+      };
+      return Promise.resolve().then(next);
+    });
+  }
+
+  /* ---------------- iki asamali cozucu ---------------- */
+
+  function fastCandidates(url, host) {
+    return [
+      settled(fetchImage(FAVICON_SOURCES[0](host), ICON_FAST_MS).then(function (b) { return measureBlob(b, 0); })),
+      settled(fetchImage(FAVICON_SOURCES[1](host), ICON_FAST_MS).then(function (b) { return measureBlob(b, 1); })),
+      settled(faviconViaChrome(url).then(function (d) { return measureDataURL(d, 2); }))
+    ];
+  }
+
+  /**
+   * Bir sitenin ikonunu data: URL olarak verir; hicbir kosulda reddetmez.
+   * Asama 1: gstatic + DuckDuckGo + Chrome deposu paralel, en buyugu kazanir.
+   * Asama 2: kazanan 64 px'in altindaysa sitenin kendi <link rel=icon>'lari
+   * (fix_icons.py da yalnizca dusuk cozunurluklu olanlari boyle yukseltiyor).
+   * onUpgrade verilirse asama 2 arkada kosar, form beklemez.
+   */
+  function faviconDataURL(url, name, onUpgrade) {
+    var host;
+    try { host = new URL(url).hostname; } catch (e) { return Promise.resolve(letterBadge(name, url || '?')); }
+    var deliver = function (c) {
+      return c ? normalizeOrKeep(c.src) : Promise.resolve(letterBadge(name, host));
+    };
+    return Promise.all(fastCandidates(url, host)).then(function (list) {
+      var best = pickBest(list);
+      if (iconScore(best) >= ICON_MIN_OK) return deliver(best);
+      var better = settled(bestFromSite(host)).then(function (c) {
+        return c && iconScore(c) > iconScore(best) ? c : best;
+      });
+      if (typeof onUpgrade === 'function' && best) {
+        better.then(function (c) {
+          if (c && c !== best) deliver(c).then(function (d) { onUpgrade(d); });
+        });
+        return deliver(best);
+      }
+      return withTimeout(better, ICON_SITE_MS, null)
+        .catch(function () { return best; })
+        .then(deliver);
+    }).catch(function () { return letterBadge(name, host); });
+  }
+
+  /** hangi kaynak ne veriyor — konsoldan hata ayiklamak icin */
+  function iconProbe(url) {
+    var host;
+    try { host = new URL(url).hostname; } catch (e) { return Promise.resolve({ error: 'bad url' }); }
+    var fmt = function (c) { return c ? c.w + 'x' + c.h + ' ' + c.mime : null; };
+    return Promise.all(fastCandidates(url, host)).then(function (list) {
+      var out = {
+        gstatic: fmt(list[0]), duckduckgo: fmt(list[1]), chrome: fmt(list[2]),
+        best: fmt(pickBest(list))
+      };
+      if (iconScore(pickBest(list)) >= ICON_MIN_OK) { out.site = 'skipped'; return out; }
+      return settled(bestFromSite(host)).then(function (c) {
+        out.site = fmt(c);
+        if (c && iconScore(c) > iconScore(pickBest(list))) out.best = fmt(c) + ' (site)';
+        return out;
+      });
+    });
+  }
+
+  /**
+   * Uygulamanin canvas'li yardimcisinin yerine gecer (bkz. index-B2QeqLFd.js).
+   * Popup ve sag tik menusunun gonderdigi favIconUrl buradan geciyor; o da
+   * 16-32 px ve cogu zaman seffaf oldugu icin normalize ediliyor.
+   */
+  function toDataURL(src, name) {
+    if (!src) return faviconDataURL(src, name);
+    if (isLetterBadge(src)) return Promise.resolve(src);
+    var raw = /^data:/.test(src) ? Promise.resolve(src)
+      : (/^blob:/.test(src) ? REAL_FETCH(src).then(function (r) { return r.blob(); }).then(blobToDataURL)
+        : fetchImageDataURL(src, ICON_FILE_MS));
+    return raw.then(normalizeOrKeep).catch(function () { return faviconDataURL(src, name); });
+  }
+
+  function dataURLToBlob(u) {
+    var head = u.split(',')[0], type = head.split(':')[1].split(';')[0];
+    var bin = atob(u.split(',')[1]), arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: type });
+  }
+
+  /**
+   * Ikonsuz kalmis kisayollari toplu doldurur (konsoldan:
+   * `await window.__ihpLocal.repairIcons()`). Yalnizca ikonu bos olanlara
+   * dokunur, mevcut ikonlarin ustune yazmaz.
+   */
+  function repairIcons() {
+    var targets = DB.websites.filter(function (w) { return !w.icon && w.url; });
+    var done = 0;
+    var chain = Promise.resolve();
+    targets.forEach(function (w) {
+      chain = chain.then(function () {
+        return faviconDataURL(w.url, w.name).then(function (data) {
+          return saveImage(dataURLToBlob(data));
+        }).then(function (marker) {
+          w.icon = w.iconKey = w.icon_key = marker;
+          DB.objects[w._id] = Object.assign({}, DB.objects[w._id] || {}, w);
+          done++;
+        }).catch(function (e) { log('icon repair failed for', w.url, e); });
+      });
+    });
+    return chain.then(function () {
+      save();
+      return { candidates: targets.length, repaired: done };
+    });
+  }
+
   /** best-effort metadata for the "add website" form, without any server help */
   function websiteInfo(url) {
     var host;
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return { __typename: 'GetWebsiteInfo', title: null, desc: null, img: null }; }
     var name = host.split('.')[0];
-    return {
-      __typename: 'GetWebsiteInfo',
-      title: name.charAt(0).toUpperCase() + name.slice(1),
-      desc: null,
-      img: 'https://www.google.com/s2/favicons?sz=128&domain=' + host
-    };
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    return pageTitle(url).catch(function () { return ''; }).then(function (title) {
+      return { __typename: 'GetWebsiteInfo', title: title || name, desc: null, img: null };
+    });
+  }
+
+  function pageTitle(url) {
+    var ac = window.AbortController ? new AbortController() : null;
+    var opts = { credentials: 'omit' };
+    if (ac) opts.signal = ac.signal;
+    return withTimeout(REAL_FETCH(url, opts).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      var type = r.headers.get('content-type') || '';
+      return r.arrayBuffer().then(function (buf) {
+        var head = new TextDecoder('latin1').decode(buf.slice(0, 4096));
+        var cs = /charset=["']?([\w-]+)/i.exec(type) || /charset=["']?([\w-]+)/i.exec(head);
+        var text;
+        try { text = new TextDecoder(cs ? cs[1] : 'utf-8').decode(buf); }
+        catch (e) { text = new TextDecoder('utf-8').decode(buf); }
+        return new DOMParser().parseFromString(text, 'text/html').title.replace(/\s+/g, ' ').trim();
+      });
+    }), ICON_SITE_MS, ac);
   }
 
   function rssList(args, ctx, sel) {
     var edgesSel = findField(sel.sel, 'edges', ctx);
-    var ids = DB.rss.subscribed.slice(args.after ? parseInt(args.after, 10) || 0 : 0, args.first || 50);
+    var start = args.after ? parseInt(args.after, 10) || 0 : 0;
+    var ids = DB.rss.subscribed.slice(start, start + (args.first || 50));
+    var end = start + ids.length;
     return rssByIds(ids, edgesSel ? edgesSel.sel : null, ctx).then(function (edges) {
       return {
         __typename: 'RSSList', edges: edges,
-        page_info: { __typename: 'PageInfo', end_cursor: String(ids.length), has_next_page: false }
+        page_info: { __typename: 'PageInfo', end_cursor: String(end), has_next_page: end < DB.rss.subscribed.length }
       };
     });
+  }
+
+  function subscribedFeeds(args, ctx, sel) {
+    var empty = {
+      __typename: 'RSSFeedListInfo', edges: [],
+      page_info: { __typename: 'PageInfo', end_cursor: null, has_next_page: false }
+    };
+    var cursors = {};
+    try { if (args.after) cursors = JSON.parse(atob(args.after)); } catch (e) { cursors = {}; }
+    var ids = DB.rss.subscribed.filter(function (id) { return !args.after || cursors[id]; });
+    if (!ids.length || !sel.sel) return Promise.resolve(empty);
+    var perFeed = Math.max(5, Math.ceil((args.first || 20) / ids.length));
+    var usedFrags = collectFragments(sel.sel, ctx.frags);
+    var body = 'query IHPFeeds { ' + ids.map(function (id, i) {
+      return 'f' + i + ': RSSFeedList(first:' + perFeed +
+        (args.after ? ' after:' + JSON.stringify(cursors[id]) : '') +
+        ' rss_id:' + JSON.stringify(id) + ') ' + printSelections(sel.sel);
+    }).join(' ') + ' }';
+    Object.keys(usedFrags).forEach(function (f) {
+      body += ' fragment ' + f + ' on ' + ctx.frags[f].on + ' ' + printSelections(ctx.frags[f].sel);
+    });
+    var when = function (f) { return new Date(f.public_at || f.created_at || 0).getTime() || 0; };
+    return remote(body, {}).then(function (j) {
+      var d = (j && j.data) || {}, edges = [], next = {}, more = false;
+      ids.forEach(function (id, i) {
+        var part = d['f' + i];
+        if (!part) return;
+        edges = edges.concat(part.edges || []);
+        var info = part.page_info;
+        if (info && info.has_next_page && info.end_cursor) { next[id] = info.end_cursor; more = true; }
+      });
+      edges.sort(function (a, b) { return when(b) - when(a); });
+      return {
+        __typename: 'RSSFeedListInfo', edges: edges,
+        page_info: { __typename: 'PageInfo', end_cursor: more ? btoa(JSON.stringify(next)) : null, has_next_page: more }
+      };
+    }).catch(function () { return empty; });
   }
 
   /** resolve subscribed feed ids through the public RSS(_id:) field */
@@ -1266,7 +2199,7 @@
    * ------------------------------------------------------------------ */
 
   var LOCAL_ROOTS = {
-    Query: { viewer: 1, syncUserApps: 1, newVersion: 1, defaultUserWallpaper: 1 },
+    Query: { viewer: 1, syncUserApps: 1, newVersion: 1, defaultUserWallpaper: 1, allSearch: 1, defaultMainSearch: 1, defaultSearch: 1, search: 1 },
     Mutation: { viewer: 1, login: 1, register: 1, oauth: 1, resetPassword: 1, createCaptcha: 1, syncUserSearch: 1 }
   };
 
@@ -1377,8 +2310,61 @@
     });
   }
 
-  var ready = Promise.all([loadJSON('local/schema.json'), loadStore(), loadImages()])
+  var RESTORE_SIGNAL = 'ihp:restored-at';
+  var STORE_CACHES = [
+    'lscache-USER_APPS', 'lscache-USER_APPS_LOCAL_UPDATE_AT', 'lscache-USER_WALLPAPER',
+    'lscache-USER_SEARCH', 'lscache-USERINFO', 'lscache-USER_COOKIE_PREFERENCES', 'CACHE-PERSIST'
+  ];
+
+  function validStore(d) {
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return false;
+    if (!d.objects || typeof d.objects !== 'object' || Array.isArray(d.objects)) return false;
+    if (!Array.isArray(d.apps) || !d.apps.length) return false;
+    return d.apps.every(function (row) {
+      return Array.isArray(row) && row.every(function (it) {
+        return it && typeof it === 'object' && typeof it.type === 'string';
+      });
+    });
+  }
+
+  function validImages(images) {
+    if (typeof images !== 'object' || Array.isArray(images)) return false;
+    return Object.keys(images).every(function (id) {
+      return /^[0-9a-f]+$/.test(id) && typeof images[id] === 'string' && /^data:[^,]*,/.test(images[id]);
+    });
+  }
+
+  function exportImages(store) {
+    var seen = {}, out = {};
+    (JSON.stringify(store).match(/ihplocal:[0-9a-f]+/g) || []).forEach(function (m) {
+      seen[m.slice(IMG_PREFIX.length)] = 1;
+    });
+    return Promise.all(Object.keys(seen).map(function (id) {
+      return idbTx('readonly', function (s) { return s.get(id); }).then(function (blob) {
+        if (!blob) return;
+        return blobToDataURL(blob).then(function (data) { out[id] = data; });
+      });
+    })).then(function () { return out; });
+  }
+
+  function importImages(images) {
+    var ids = Object.keys(images);
+    if (!ids.length) return Promise.resolve();
+    return Promise.all(ids.map(function (id) {
+      return REAL_FETCH(images[id]).then(function (r) { return r.blob(); });
+    })).then(function (blobs) {
+      return idbTx('readwrite', function (s) {
+        ids.forEach(function (id, i) { s.put(blobs[i], id); });
+      });
+    });
+  }
+
+  var ready = Promise.all([
+    loadJSON('local/schema.json'), loadStore(), loadImages(),
+    loadJSON('local/search-catalog.json').catch(function () { return {}; })
+  ])
     .then(function (r) {
+      SEARCH_CATALOG = r[3];
       SCHEMA = r[0].t;
       CANON = r[0].canon;
       DB = r[1];
@@ -1389,6 +2375,10 @@
         save();
       });
     })
+    .then(function () { return migrateInlineIcons().catch(function () { }); })
+    .then(function () { migrateIconPaths(); migrateRemoteIcons(); })
+    .then(function () { return migrateDataWallpapers().catch(function (e) { console.warn('[ihp-local] wallpaper migration failed', e); }); })
+    .then(function () { refreshWallpaperPreview(); })
     .catch(function (e) { console.error('[ihp-local] init failed', e); });
 
   /* ------------------------------------------------------------------ *
@@ -1478,7 +2468,7 @@
             var arr = Array.isArray(j) ? j : [j];
             arr.forEach(function (r, k) {
               scrubAuthErrors(r);
-              if (r && r.data) indexObjects(unalias(r.data));
+              if (r && r.data) { markSubscriptions(r.data); indexObjects(unalias(r.data)); }
               results[remoteIdx[k]] = r;
             });
             trimObjects();
@@ -1549,6 +2539,11 @@
   window.__ihpLocal = {
     ready: ready,
     saveImage: function (blob) { return saveImage(blob); },
+    favicon: function (url, name, onUpgrade) { return faviconDataURL(url, name, onUpgrade); },
+    toDataURL: function (src, name) { return toDataURL(src, name); },
+    normalize: function (src) { return normalizeIcon(src); },
+    iconProbe: function (url) { return iconProbe(url); },
+    repairIcons: function () { return repairIcons(); },
     reset: function () { return resetStore().then(function () { location.reload(); }); },
     dump: function () { return DB; },
     trace: function () { return TRACE; },
@@ -1558,23 +2553,43 @@
      * ({app, storage: {...}}) hem de dogrudan store nesnesini kabul eder.
      * Yazma tamamlanmadan sayfayi yenilemiyoruz — save() 200ms geciktirmeli.
      */
+    exportImages: function () { return exportImages(DB); },
     restore: function (payload) {
       var data = payload && payload.storage ? payload.storage[STORE_KEY] : payload;
-      if (!data || !Array.isArray(data.apps)) {
+      var images = (payload && payload.images) || {};
+      if (!validStore(data) || !validImages(images)) {
         return Promise.reject(new Error('beklenen bicimde bir yedek degil'));
       }
-      DB = data;
-      return new Promise(function (resolve, reject) {
+      return importImages(images).then(loadSeed).then(function (seed) {
+        data = Object.assign(defaults(seed), data);
+        data.v = SEED_VERSION;
+        data.appsUpdatedAt = now();
+        freezeStore();
+        DB = data;
+        return new Promise(function (resolve, reject) {
+          try {
+            if (storageArea) {
+              var o = {}; o[STORE_KEY] = DB;
+              storageArea.set(o, function () { resolve(); });
+            } else {
+              localStorage.setItem(STORE_KEY, JSON.stringify(DB));
+              resolve();
+            }
+          } catch (e) { reject(e); }
+        });
+      }).then(function () {
         try {
-          if (storageArea) {
-            var o = {}; o[STORE_KEY] = DB;
-            storageArea.set(o, function () { resolve(); });
-          } else {
-            localStorage.setItem(STORE_KEY, JSON.stringify(DB));
-            resolve();
-          }
-        } catch (e) { reject(e); }
-      }).then(function () { location.reload(); });
+          STORE_CACHES.forEach(function (k) { localStorage.removeItem(k); });
+          localStorage.setItem(RESTORE_SIGNAL, String(now()));
+        } catch (e) { /* private mode */ }
+        location.reload();
+      });
     }
   };
+
+  window.addEventListener('storage', function (e) {
+    if (e.key !== RESTORE_SIGNAL || !e.newValue) return;
+    freezeStore();
+    location.reload();
+  });
 })();
